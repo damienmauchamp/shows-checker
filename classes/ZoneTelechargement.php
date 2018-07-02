@@ -13,7 +13,7 @@ use DOMDocument;
 
 class ZoneTelechargement
 {
-    private $domain = "https://1ww.zone-telechargement1.com/";
+//    private $domain = "https://1ww.zone-telechargement1.com/";
 
     /**
      * ZoneTelechargement constructor.

@@ -5,7 +5,7 @@ include "start.php";
 
 use \TVShowsAPI\ZoneTelechargement as zt;
 
-
+global $baseLinks, $tvShowsList, $tvLinks;
 
 //$newLinks = array();
 //$newLinks[62858][3][3] = "yguhkiljomk";
