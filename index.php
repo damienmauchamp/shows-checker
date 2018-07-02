@@ -1,6 +1,7 @@
 <?php
 
 include "start.php";
+//file_put_contents("aaa.txt", date("Y-m-d H:i:s")." \t start\n\n ", FILE_APPEND);
 
 use \TVShowsAPI\ZoneTelechargement as zt;
 
@@ -59,6 +60,9 @@ foreach ($tvShowsList as $s) {
                 }
             }
         }
+//        if ($tvShowId === 62643)
+//            break;
+//        file_put_contents("aaa.txt", date("Y-m-d H:i:s")." \t $tvShowId\n\n ", FILE_APPEND);
     }
 }
 
@@ -80,7 +84,7 @@ foreach ($tvLinks as $id => $show) {
     }
 }
 
-$db = new \TVShowsAPI\DB();
-$db->addLinks($newLinks);
+//$db = new \TVShowsAPI\DB();
+//$db->addLinks($newLinks);
 
 var_dump($newLinks);
