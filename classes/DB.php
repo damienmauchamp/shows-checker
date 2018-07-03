@@ -15,6 +15,9 @@ use PDO;
 class DB
 {
 
+    /**
+     * @var PDO null
+     */
     private $dbh;
 
     /**
@@ -28,7 +31,7 @@ class DB
     {
 
         $host = 'localhost';
-        $dbname = 'showchecker';
+        $dbname = 'shows-checker';
         $env = explode(":", $this->getEnv());
         $username = $env[0] ? $env[0] : null;
         $passwd = $env[1] ? $env[1] : null;
@@ -87,6 +90,23 @@ class DB
         return $res;
     }
 
+    public function insertLink($id, $season, $episode, $link)
+    {
+        $this->connect();
+        $stmt = $this->dbh->prepare("
+            INSERT INTO links (id, season, episode, link)
+            VALUES (:id, :season, :episode, :link)"
+        );
+        $res = $stmt->execute(array(
+            "id" => $id,
+            "season" => $season,
+            "episode" => $episode,
+            "link" => $link
+        ));
+        $this->disconnect();
+        return $res;
+    }
+
     public function showsInit($shows)
     {
         foreach ($shows as $show) {
@@ -102,7 +122,7 @@ class DB
 
     public function getShows()
     {
-        $sql = "SELECT * FROM shows";
+        $sql = "SELECT * FROM shows ORDER BY name";
         return $this->selectRaw($sql);
     }
 
@@ -118,6 +138,30 @@ class DB
             $link = $item["link"];
             $res[$id][$season][$episode] = $link;
         }
+        return $res;
+    }
+
+    public function addShowsLinks($id, $array)
+    {
+        foreach ($array as $season => $episodes) {
+            foreach ($episodes as $episode => $link) {
+                var_dump($this->insertLink($id, $season, $episode, $link));
+            }
+        }
+    }
+
+    public function removeShowsOldLinks($id, $season, $episode) {
+        $this->connect();
+        $stmt = $this->dbh->prepare("
+            DELETE FROM links
+            WHERE id = :id AND (season < :season OR (season = :season AND episode <= :episode))"
+        );
+        $res = $stmt->execute(array(
+            "id" => $id,
+            "season" => $season,
+            "episode" => $episode
+        ));
+        $this->disconnect();
         return $res;
     }
 
@@ -137,7 +181,7 @@ class DB
 
         $sql = "INSERT INTO links (id, season, episode, link) VALUES $values";
         echo $sql;
-        $this->insertRaw($sql);
+//        $this->insertRaw($sql);
     }
 
 

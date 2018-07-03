@@ -10,7 +10,7 @@ set_time_limit(0);
 require __DIR__ . '/vendor/autoload.php';
 
 use \TVShowsAPI\APICall as api;
-//use \TVShowsAPI\DB as db;
+use \TVShowsAPI\DB as db;
 
 $keys = explode(":", file_get_contents(__DIR__ . '/.keys'));
 define("API_URL", "https://api.themoviedb.org/3/");
@@ -34,16 +34,18 @@ define("URL_TV_SHOW", "tv/");
  *      - SHOWS -> change les {lastSeenSeason, lastSeenEpisode}
  */
 
-
 // vide
-//$db = new db;
+$db = new db;
+
+// all shows
 $tvShowsList = array();
-//$tvShowsList = $db->getShows();
+$tvShowsList = $db->getShows();
+
+// all links
 $baseLinks = array();
-//$baseLinks = $db->getLinks();
+$baseLinks = $db->getLinks();
+
 $tvLinks = array();
-//var_dump($tvLinks);
-//exit;
 
 function getTvShow($id)
 {
@@ -63,7 +65,8 @@ function getTvShowSeasonEpisodes($id, $season)
     return isset($response->episodes) ? $response->episodes : null;
 }
 
-if (true) {
+// init
+if (false) {
     $tvShowsList = array(
         array(
             "id" => 60948,
@@ -176,41 +179,6 @@ if (true) {
             "name" => "Marvel's Cloak & Dagger",
             "lastSeenSeason" => "1",
             "lastSeenEpisode" => "0",
-            "status" => true
-        ),
-        array(
-            "id" => 61889,
-            "name" => "Marvel's Daredevil",
-            "lastSeenSeason" => "2",
-            "lastSeenEpisode" => "13",
-            "status" => true
-        ),
-        array(
-            "id" => 38472,
-            "name" => "Marvel's Jessica Jones",
-            "lastSeenSeason" => "2",
-            "lastSeenEpisode" => "13",
-            "status" => true
-        ),
-        array(
-            "id" => 62127,
-            "name" => "Marvel's Iron Fist",
-            "lastSeenSeason" => "1",
-            "lastSeenEpisode" => "13",
-            "status" => true
-        ),
-        array(
-            "id" => 62126,
-            "name" => "Marvel's Luke Cage",
-            "lastSeenSeason" => "2",
-            "lastSeenEpisode" => "5",
-            "status" => true
-        ),
-        array(
-            "id" => 62285,
-            "name" => "Marvel's The Defenders",
-            "lastSeenSeason" => "1",
-            "lastSeenEpisode" => "8",
             "status" => true
         ),
         array(
@@ -343,7 +311,7 @@ if (true) {
         ),
     );
 
-//    $db = new db();
+//    $db = new db;
 //    $db->showsInit($tvShowsList);
 //    exit;
 }

@@ -45,9 +45,13 @@ class TVSeason
         return $episodes;
     }
 
+    /**
+     * @param int $season
+     * @return bool
+     */
     public function isWatched($season)
     {
-        return $season > $this->number;
+        return intval($season) > $this->number;
     }
 
     public function isAvailable() {

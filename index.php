@@ -1,23 +1,51 @@
 <?php
+set_time_limit(0);
+require_once "start.php";
+if (!isset($root)) {
+    $root = '';
+} ?>
+    <title><?= isset($pageTitle) ? $pageTitle : "SC" ?></title>
+    <script src="<?= $root ?>libs/jquery/jquery-1.12.1.js"></script>
+    <script src="<?= $root ?>libs/jquery/jquery-migrate-1.2.1.min.js"></script>
+    <script>
+        function getLinks(btn) {
+            var id = $(btn).attr("data-show-id");
+            var lastSeason = $(btn).attr("data-show-last-season");
+            var lastEpisode = $(btn).attr("data-show-last-episode");
+            var quality = $(btn).attr("data-show-quality");
 
-include "start.php";
-//file_put_contents("aaa.txt", date("Y-m-d H:i:s")." \t start\n\n ", FILE_APPEND);
+            $.ajax({
+                url: "./ajax/getLinks.php",
+                method: "GET",
+                data: {
+                    id: id,
+                    lastSeason: lastSeason,
+                    lastEpisode: lastEpisode,
+                    quality: quality
+                },
+                success: function (data) {
+                    $("#show-"+id).empty().append(data);
+                }
+            });
+
+            console.log(id, lastSeason, lastEpisode, quality);
+        }
+
+        $(document).ready(function () {
+
+
+        });
+    </script>
+<?
 
 use \TVShowsAPI\ZoneTelechargement as zt;
 
 global $baseLinks, $tvShowsList, $tvLinks;
 
-//$newLinks = array();
-//$newLinks[62858][3][3] = "yguhkiljomk";
-//$newLinks[62858][3][2] = "estrdiljomk";
-//$newLinks[62858][3][1] = "estrdfyguhk";
-//var_dump($baseLinks);
-//var_dump($newLinks);
-
-
 foreach ($tvShowsList as $s) {
 
     $tvShow = new \TVShowsAPI\TVShow($s['id'], $s['lastSeenSeason'], $s['lastSeenEpisode'], $s["status"]);
+
     if ($tvShow->isOn()) {
         $tvShowId = $tvShow->getId();
         $tvShowName = $tvShow->getName();
@@ -26,65 +54,52 @@ foreach ($tvShowsList as $s) {
         $myLastSeenSeason = $tvShow->getLastSeenSeason();
         $myLastSeenEpisode = $tvShow->getLastSeenEpisode();
         $tvShowQuality = isset($s["quality"]) ? $s["quality"] : 720;
-        //var_dump("$tvShowId - $tvShowName");
 
         // SEASONS
         foreach ($tvSeasons as $tvSeason) {
-
             $season = new \TVShowsAPI\TVSeason($tvSeason->id, $tvShowId, $tvSeason->season_number, $tvSeason->episode_count, strtotime($tvSeason->air_date));
-//        $seasonId = $season->getId();
             $seasonNumber = $season->getNumber();
-//        $seasonEpisodesCount = $season->getEpisodesCount();
-//        $seasonAirDate = $season->getAirDate();
 
             if (!$season->isWatched($myLastSeenSeason) && $season->isAvailable()) {
                 $seasonEpisodes = $season->getEpisodes();
+                var_dump($tvShowName);
+                var_dump($season);
+                echo "<hr/>";
+                ?>
+                <button class="btn-show"
+                        data-show-id="<?= $tvShowId ?>"
+                        data-show-last-season="<?= $myLastSeenSeason ?>"
+                        data-show-last-episode="<?= $myLastSeenEpisode ?>"
+                        data-show-quality="<?= $tvShowQuality ?>"
+                        onclick="getLinks(this)"
+                        value="<?= $tvShowName ?>">Update <?= $tvShowName ?></button>
+                <pre id="show-<?= $tvShowId ?>">
+
+                </pre>
+                <?
 
                 // ÉPISODES
-                foreach ($seasonEpisodes as $tvEpisode) {
-                    $episode = new \TVShowsAPI\TVEpisode($tvEpisode->id, $tvShowId, $season->getNumber(), $tvEpisode->episode_number, strtotime($tvEpisode->air_date));
-
-                    $episodeAirDate = $episode->getAirDate();
-                    $episodeNumber = $episode->getNumber();
-
-                    if (!$episode->isWatched($myLastSeenSeason, $myLastSeenEpisode) && $episode->isAvailable()) {
-                        if (!isset($baseLinks[$tvShowId][$seasonNumber][$episodeNumber]) || $baseLinks[$tvShowId][$seasonNumber][$episodeNumber] == null) {
-                            $tvLinks[$tvShowId][$seasonNumber][$episodeNumber] = zt::getTvEpisodeLink($tvShowName, $episode, $tvShowQuality);
-//                            var_dump($baseLinks[$tvShowId][$seasonNumber][$episodeNumber]);
-                            //var_dump("aucun lien pour S" . sprintf("%02d", $seasonNumber) . "E" . sprintf("%02d", $episodeNumber));
-//                        exit;
-                        } /*else {
-                            var_dump("OK S" . sprintf("%02d", $seasonNumber) . "E" . sprintf("%02d", $episodeNumber));
-                        }*/
-                    }
-                }
+//                foreach ($seasonEpisodes as $tvEpisode) {
+//                    $episode = new \TVShowsAPI\TVEpisode($tvEpisode->id, $tvShowId, $season->getNumber(), $tvEpisode->episode_number, strtotime($tvEpisode->air_date));
+//
+//                    $episodeAirDate = $episode->getAirDate();
+//                    $episodeNumber = $episode->getNumber();
+//
+//                    if (!$episode->isWatched($myLastSeenSeason, $myLastSeenEpisode) && $episode->isAvailable()) {
+//                        if (!isset($baseLinks[$tvShowId][$seasonNumber][$episodeNumber]) || $baseLinks[$tvShowId][$seasonNumber][$episodeNumber] == null) {
+//                            $tvLinks[$tvShowId][$seasonNumber][$episodeNumber] = zt::getTvEpisodeLink($tvShowName, $episode, $tvShowQuality);
+////                            var_dump($baseLinks[$tvShowId][$seasonNumber][$episodeNumber]);
+//                            var_dump("aucun lien pour S" . sprintf("%02d", $seasonNumber) . "E" . sprintf("%02d", $episodeNumber));
+////                        exit;
+//                        } else {
+//                            var_dump("OK S" . sprintf("%02d", $seasonNumber) . "E" . sprintf("%02d", $episodeNumber));
+//                        }
+//                    }
+//                }
             }
+
         }
-//        if ($tvShowId === 62643)
-//            break;
-//        file_put_contents("aaa.txt", date("Y-m-d H:i:s")." \t $tvShowId\n\n ", FILE_APPEND);
+//        var_dump($tvShow);
     }
 }
-
 var_dump($tvLinks);
-
-$newLinks = array();
-foreach ($tvLinks as $id => $show) {
-    foreach ($show as $season => $seasonEps) {
-        foreach ($seasonEps as $episode => $link) {
-            $newLink = array(
-                "id" => $id,
-                "season" => $season,
-                "episode" => $episode,
-                "link" => $link
-            );
-            if (!empty($id))
-                $newLinks[] = $newLink;
-        }
-    }
-}
-
-//$db = new \TVShowsAPI\DB();
-//$db->addLinks($newLinks);
-
-var_dump($newLinks);
