@@ -1,105 +1,118 @@
 <?php
 set_time_limit(0);
 require_once "start.php";
-if (!isset($root)) {
-    $root = '';
-} ?>
-    <title><?= isset($pageTitle) ? $pageTitle : "SC" ?></title>
-    <script src="<?= $root ?>libs/jquery/jquery-1.12.1.js"></script>
-    <script src="<?= $root ?>libs/jquery/jquery-migrate-1.2.1.min.js"></script>
-    <script>
-        function getLinks(btn) {
-            var id = $(btn).attr("data-show-id");
-            var lastSeason = $(btn).attr("data-show-last-season");
-            var lastEpisode = $(btn).attr("data-show-last-episode");
-            var quality = $(btn).attr("data-show-quality");
-
-            $.ajax({
-                url: "./ajax/getLinks.php",
-                method: "GET",
-                data: {
-                    id: id,
-                    lastSeason: lastSeason,
-                    lastEpisode: lastEpisode,
-                    quality: quality
-                },
-                success: function (data) {
-                    $("#show-"+id).empty().append(data);
-                }
-            });
-
-            console.log(id, lastSeason, lastEpisode, quality);
-        }
-
-        $(document).ready(function () {
-
-
-        });
-    </script>
+$root = '';
+$all = ($_GET["page"] && $_GET["page"] === "all");
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <? include "inc/meta.php" ?>
+</head>
+<body>
+    <a href="index.php">Vue d'ensemble</a>
+    <a href="index.php?page=all">All</a>
 <?
+if ($all) {
+    $links = json_decode($db->getAllLinks());
+    $res = array();
+    foreach ($links as $l) {
+        $id = $l->id;
+        $season = $l->season;
+        $episode = $l->episode;
+        $res[$id]["name"] = $l->name;
+        $res[$id]["seasons"][$season][$episode]["link"] = $l->link;
+        $res[$id]["seasons"][$season][$episode]["html"] = $l->html;
+        $res[$id]["seasons"][$season][$episode]["quality"] = $l->quality;
+    }
 
-use \TVShowsAPI\ZoneTelechargement as zt;
+    foreach ($res as $show) { ?>
+        <div class="">
+            <h3 class=""><?= $show["name"] ?></h3>
+            <div class="">
+                <? foreach ($show["seasons"] as $n => $season) { ?>
+                    <h4 class="">Saison <?= $n ?></h4>
+                    <div class="">
+                        <? foreach ($season as $e => $episode) { ?>
+                            <div class="">Episode <?= $e ?>
+                                <?= $episode["html"] ?>
+                            </div>
+                        <? } ?>
+                    </div>
+                <? } ?>
+            </div>
+        </div>
+    <? }
+//    echo "<pre>";
+//    print_r($res);
+//    echo "</pre>";
+} else {
+    global $baseLinks, $tvShowsList, $tvLinks;
 
-global $baseLinks, $tvShowsList, $tvLinks;
+    foreach ($tvShowsList as $s) {
 
-foreach ($tvShowsList as $s) {
+        $tvShow = new \TVShowsAPI\TVShow($s['id'], $s['lastSeenSeason'], $s['lastSeenEpisode'], $s["status"]);
 
-    $tvShow = new \TVShowsAPI\TVShow($s['id'], $s['lastSeenSeason'], $s['lastSeenEpisode'], $s["status"]);
+        if ($tvShow->isOn()) {
+            $tvShowId = $tvShow->getId();
+            $tvShowName = $tvShow->getName();
+            $tvNumberOfSeasons = $tvShow->getNumberOfSeasons();
+            $tvSeasons = $tvShow->getSeasons();
+            $myLastSeenSeason = $tvShow->getLastSeenSeason();
+            $myLastSeenEpisode = $tvShow->getLastSeenEpisode();
+            $tvShowQuality = isset($s["quality"]) ? $s["quality"] : $db->getShowQuality($tvShowId);
 
-    if ($tvShow->isOn()) {
-        $tvShowId = $tvShow->getId();
-        $tvShowName = $tvShow->getName();
-        $tvNumberOfSeasons = $tvShow->getNumberOfSeasons();
-        $tvSeasons = $tvShow->getSeasons();
-        $myLastSeenSeason = $tvShow->getLastSeenSeason();
-        $myLastSeenEpisode = $tvShow->getLastSeenEpisode();
-        $tvShowQuality = isset($s["quality"]) ? $s["quality"] : 720;
+            var_dump($tvShowName);
+            $seasonsCount = array();
 
-        // SEASONS
-        foreach ($tvSeasons as $tvSeason) {
-            $season = new \TVShowsAPI\TVSeason($tvSeason->id, $tvShowId, $tvSeason->season_number, $tvSeason->episode_count, strtotime($tvSeason->air_date));
-            $seasonNumber = $season->getNumber();
+            // SEASONS
+            foreach ($tvSeasons as $tvSeason) {
+                $season = new \TVShowsAPI\TVSeason($tvSeason->id, $tvShowId, $tvSeason->season_number, $tvSeason->episode_count, strtotime($tvSeason->air_date));
+                $seasonNumber = $season->getNumber();
+                $numberOfEpisodes = $season->getEpisodesCount();
 
-            if (!$season->isWatched($myLastSeenSeason) && $season->isAvailable()) {
-                $seasonEpisodes = $season->getEpisodes();
-                var_dump($tvShowName);
-                var_dump($season);
-                echo "<hr/>";
-                ?>
-                <button class="btn-show"
-                        data-show-id="<?= $tvShowId ?>"
-                        data-show-last-season="<?= $myLastSeenSeason ?>"
-                        data-show-last-episode="<?= $myLastSeenEpisode ?>"
-                        data-show-quality="<?= $tvShowQuality ?>"
-                        onclick="getLinks(this)"
-                        value="<?= $tvShowName ?>">Update <?= $tvShowName ?></button>
-                <pre id="show-<?= $tvShowId ?>">
+                $seasonsCount[$seasonNumber] = $numberOfEpisodes;
 
-                </pre>
-                <?
-
-                // ÉPISODES
-//                foreach ($seasonEpisodes as $tvEpisode) {
-//                    $episode = new \TVShowsAPI\TVEpisode($tvEpisode->id, $tvShowId, $season->getNumber(), $tvEpisode->episode_number, strtotime($tvEpisode->air_date));
-//
-//                    $episodeAirDate = $episode->getAirDate();
-//                    $episodeNumber = $episode->getNumber();
-//
-//                    if (!$episode->isWatched($myLastSeenSeason, $myLastSeenEpisode) && $episode->isAvailable()) {
-//                        if (!isset($baseLinks[$tvShowId][$seasonNumber][$episodeNumber]) || $baseLinks[$tvShowId][$seasonNumber][$episodeNumber] == null) {
-//                            $tvLinks[$tvShowId][$seasonNumber][$episodeNumber] = zt::getTvEpisodeLink($tvShowName, $episode, $tvShowQuality);
-////                            var_dump($baseLinks[$tvShowId][$seasonNumber][$episodeNumber]);
-//                            var_dump("aucun lien pour S" . sprintf("%02d", $seasonNumber) . "E" . sprintf("%02d", $episodeNumber));
-////                        exit;
-//                        } else {
-//                            var_dump("OK S" . sprintf("%02d", $seasonNumber) . "E" . sprintf("%02d", $episodeNumber));
-//                        }
-//                    }
-//                }
+                if (!$season->isWatched($myLastSeenSeason) && $season->isAvailable()) {
+                    $seasonEpisodes = $season->getEpisodes();
+                }
             }
 
+            ?>
+            <label for="seasons-<?= $tvShowId ?>"></label>
+            <select class="seasons" data-show-id="<?= $tvShowId ?>" id="seasons-<?= $tvShowId ?>">
+                <? foreach ($seasonsCount as $s => $n) {
+                    $selected = $s == $myLastSeenSeason ? "selected" : "";
+                    if ($s > 0) { ?>
+                        <option data-season-episodes="<?= $n ?>" value="<?= $s ?>" <?= $selected ?>><?= $s ?></option>
+                    <? }
+                } ?>
+            </select>
+            <label for="episodes-<?= $tvShowId ?>"></label>
+            <select class="episodes" data-show-id="<?= $tvShowId ?>" id="episodes-<?= $tvShowId ?>">
+                <? for ($e = 1; $e <= $seasonsCount[$myLastSeenSeason]; $e++) {
+                    $selected = $e == $myLastSeenEpisode ? "selected" : "";
+                    if ($e > 0) { ?>
+                        <option value="<?= $e ?>" <?= $selected ?>><?= $e ?></option>
+                    <? }
+                } ?>
+            </select>
+            <button class="btn-show" id="btn-<?= $tvShowId ?>"
+                    data-show-id="<?= $tvShowId ?>"
+                    data-show-last-season="<?= $myLastSeenSeason ?>"
+                    data-show-last-episode="<?= $myLastSeenEpisode ?>"
+                    data-show-quality="<?= $tvShowQuality ?>"
+                    onclick="getLinks(this)"
+                    value="<?= $tvShowName ?>">Update
+            </button>
+            <div class="loading" id="loading-<?= $tvShowId ?>" style="display:none">Loading...</div>
+            <pre id="show-<?= $tvShowId ?>"></pre>
+            <?
+            echo "<hr/>";
         }
-//        var_dump($tvShow);
+//    exit;
     }
 }
-var_dump($tvLinks);
+?>
+</body>
+</html>

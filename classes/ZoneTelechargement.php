@@ -75,17 +75,18 @@ class ZoneTelechargement
      * @param $url
      * @param string $quality
      * @param $lang
-     * @return array
+     * @return array|bool
      */
     private static function getResultLinks($url, $quality, $lang)
     {
         $links = array();
-        $html = self::curlGETRequestToHtml($url);
+        if (!$html = self::curlGETRequestToHtml($url))
+            return false;
         $hrefs = self::getLinksFromHtml($html);
 
         foreach ($hrefs as $node) {
             $link = $node->getAttribute('href');
-            if (strpos($link, $quality."") !== false && strpos($link, $lang) !== false && strpos($link, "anime") == false)
+            if (strpos($link, $quality . "") !== false && strpos($link, $lang) !== false && strpos($link, "anime") == false)
                 $links[] = $link;
         }
         return array_unique($links);
@@ -94,7 +95,8 @@ class ZoneTelechargement
     public static function getEpisodesLinks($url, $episodes)
     {
         $links = array();
-        $html = self::curlGETRequestToHtml($url);
+        if (!$html = self::curlGETRequestToHtml($url))
+            return false;
         $hrefs = self::getLinksFromHtml($html);
 
         foreach ($hrefs as $node) {
