@@ -24,7 +24,7 @@ class ZoneTelechargement
 
     public static function search($search, $quality = "720", $lang = "vostfr")
     {
-        $domain = "https://1ww.zone-telechargement1.com/";
+        $domain = "https://zone-telechargement1.ws/";
 //        $searchUrl = "index.php?story=$search&do=search&subaction=search";
 //        $res = "hd$quality";
         $searchUrl = "index.php?story=" . urlencode("$search") . "&do=search&subaction=search";

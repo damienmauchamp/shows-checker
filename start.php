@@ -67,7 +67,10 @@ function getTvShowSeasonEpisodes($id, $season)
 
 function linksToHTML($array)
 {
-    return "<a href=\"$array[link]\" class=\"episode-link\" data-link-season=\"$array[season]\"  data-link-episode=\"$array[episode]\">$array[link]</a>";
+    $text = "S$array[season]E$array[episode]";
+    return $array["link"] ?
+        "<a href=\"$array[link]\" class=\"episode-link\" data-link-season=\"$array[season]\"  data-link-episode=\"$array[episode]\">$text</a><br/>" :
+        $text."<br/>";
 }
 
 // init

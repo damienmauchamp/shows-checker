@@ -1,8 +1,9 @@
 <?php
+$time_start = microtime(true);
 set_time_limit(0);
 require_once "start.php";
 $root = '';
-$all = ($_GET["page"] && $_GET["page"] === "all");
+$refresh = (isset($_GET["page"]) && $_GET["page"] === "refresh");
 ?>
 <!DOCTYPE html>
 <html>
@@ -11,9 +12,9 @@ $all = ($_GET["page"] && $_GET["page"] === "all");
 </head>
 <body>
     <a href="index.php">Vue d'ensemble</a>
-    <a href="index.php?page=all">All</a>
+    <a href="index.php?page=refresh">Refresh</a>
 <?
-if ($all) {
+if (!$refresh) {
     $links = json_decode($db->getAllLinks());
     $res = array();
     foreach ($links as $l) {
@@ -73,9 +74,9 @@ if ($all) {
 
                 $seasonsCount[$seasonNumber] = $numberOfEpisodes;
 
-                if (!$season->isWatched($myLastSeenSeason) && $season->isAvailable()) {
-                    $seasonEpisodes = $season->getEpisodes();
-                }
+//                if (!$season->isWatched($myLastSeenSeason) && $season->isAvailable()) {
+//                    $seasonEpisodes = $season->getEpisodes();
+//                }
             }
 
             ?>
@@ -113,6 +114,8 @@ if ($all) {
 //    exit;
     }
 }
+$time_end = microtime(true);
+var_dump($time_end - $time_start . " s")
 ?>
 </body>
 </html>
