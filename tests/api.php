@@ -1,52 +1,49 @@
 <?php
 require_once "../start.php";
 
-//header("Content-type:application/json");
+header("Content-type:application/json");
 use TVShowsAPI\APICall as api;
 
-function test_show($id, $lastSeenSeason)
-{
-    $maxSeasons = 20;
-    $prePoster = "//image.tmdb.org/t/p/w600_and_h900_bestv2";
+$id = $_GET["id"];
+$lastSeenSeason = $_GET["lastSeenSeason"];
+$maxSeasons = 20;
 
-    $url = "https://api.themoviedb.org/3/tv/" . $id . "?api_key=" . API_KEY . "&append_to_response=";
-    for ($i = 1; $i <= $maxSeasons; $i++) {
-        $url .= "season/$i";
-        $url .= $i !== $maxSeasons ? "," : null;
-    }
-    $response = json_decode($json = api::get($url));
-
+$url = "https://api.themoviedb.org/3/tv/" . $id . "?api_key=" . API_KEY . "&append_to_response=";
+for ($i = 1; $i <= $maxSeasons; $i++) {
+    $url .= "season/$i";
+    $url .= $i !== $maxSeasons ? "," : null;
+}
+$response = json_decode($json = api::get($url));
 //echo $json;exit;
 
-    $name = $response->name;
-    $number_of_seasons = $response->number_of_seasons;
-    $poster = $response->poster_path;
+$name = $response->name;
+$number_of_seasons = $response->number_of_seasons;
+$poster = $response->poster_path;
 
-// nombre d'épisodes par saisons
-    $seasons = array();
-    for ($i = 1; $i <= $number_of_seasons; $i++) {
-        $key = "season/$i";
-        $val = isset($response->$key) ? $response->$key : null;
-        $seasons[$i] = count($val->episodes);
-
-        if ($i === intval($lastSeenSeason))
-            $poster = $val->poster_path;
-    }
-
-//    $lastSeenEpisode = 6;
-//    $lastSeenSeason = 4;
-    $quality = 720;
-    vardump($id);
-    vardump($name);
-    vardump($seasons);
-    vardump($prePoster . $poster);
-    vardump($quality);
-
-    echo "<img src=\"$prePoster$poster\"/>";
+$seasons = array();
+for ($i = 1; $i <= $number_of_seasons; $i++) {
+    $key = "season/$i";
+    $val = isset($response->$key) ? $response->$key : null;
+    $seasons[$i] = count($val->episodes);
+    if ($i === intval($lastSeenSeason))
+        $poster = $val->poster_path;
 }
 
-test_show($_GET["id"], $_GET["lastSeenSeason"]);
+echo json_encode(array(
+    "id" => $id,
+    "name" => $name,
+    "seasons" => $seasons,
+    "poster" => $poster
+));
 
+/*
+vardump($id);
+vardump($name);
+vardump($seasons);
+$prePoster = "//image.tmdb.org/t/p/w600_and_h900_bestv2";
+vardump($prePoster . $poster);
+
+echo "<img src=\"$prePoster$poster\"/>";
 $tvShowsList = array(
     array(
         "id" => 60948,
@@ -290,3 +287,4 @@ $tvShowsList = array(
         "status" => true
     ),
 );
+*/
