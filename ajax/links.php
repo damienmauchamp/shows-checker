@@ -12,10 +12,15 @@ $lastSeason = isset($_GET["lastSeenSeason"]) ? $_GET["lastSeenSeason"] : null;
 $lastEpisode = isset($_GET["lastSeenEpisode"]) ? $_GET["lastSeenEpisode"] : null;
 
 $show = $db->getShow($id);
-// todo : si >
 $episodes = $show->getNeededEpisodes($lastSeason, $lastEpisode);
 $links = fetchLinks($show, $episodes);
 $res = $show->updateLinks($links);
 $prog = $show->updateProgression($lastSeason, $lastEpisode);
 $rem = $show->removeOldLinks();
+
+//foreach ($links as $s => $eps) {
+//    foreach ($eps as $ep => $link) {
+//        var_dump($links[$s][$ep]);
+//    }
+//}
 echo json_encode($links);

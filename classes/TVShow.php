@@ -123,10 +123,14 @@ class TVShow
                 <img class='poster' src='" . $this->getPoster(true) . "' style='width:50px'/>
                 <h3 class='title'>" . $this->getName() . "</h3>";
         $str .= $this->progressionToString();
-        $str .= "<h4 class=''>S" . $this->getLastSeenSeason(true) . "E" . $this->getLastSeenEpisode(true) . "</h4>
+        $str .= "<!--h4 class=''>S" . $this->getLastSeenSeason(true) . "E" . $this->getLastSeenEpisode(true) . "</h4-->
             </div>
             <div class='loading' id='loading-" . $this->getId() . "' style='display:none'>Loading...</div>
-            <pre id='show-" . $this->getId() . "'></pre>";
+            <pre id='show-" . $this->getId() . "'>";
+        foreach ($this->getDBLinks() as $links) {
+            $str .= "S" . $links["season"] . "E" . $links["episode"] . " <div class='link'><a href='" . $links["link"] . "' target='_blank'>" . $links["link"] . "</a></div>";
+        }
+        $str .= "</pre>";
 
         return $str;
     }
@@ -298,8 +302,8 @@ class TVShow
         $res = true;
         $db = new db;
         foreach ($links as $season => $episodes) {
-            foreach ($episodes as $episode => $link) {
-                if (!$db->addLink($this->getId(), $season, $episode, $link))
+            foreach ($episodes as $episode => $e) {
+                if (!$db->addLink($this->getId(), $season, $episode, $e["link"]))
                     $res = false;
             }
         }
@@ -314,9 +318,16 @@ class TVShow
         return $db->updateShowProgression($this->getId(), $season, $episode);
     }
 
-    public function removeOldLinks() {
+    public function removeOldLinks()
+    {
         $db = new db;
         return $db->removeOldLinks($this->getId(), $this->getLastSeenSeason(), $this->getLastSeenEpisode());
+    }
+
+    public function getDBLinks()
+    {
+        $db = new db;
+        return $db->getShowLinks($this->getId(), $this->getLastSeenSeason(), $this->getLastSeenEpisode());
     }
 
 

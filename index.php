@@ -15,6 +15,7 @@ $root = '';
 
 <?
 getShows();
+// todo: afficher les liens déjà dispos
 ?>
 
 </body>

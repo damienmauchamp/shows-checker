@@ -82,7 +82,8 @@ class ZoneTelechargement
                 foreach ($hrefs as $node) {
                     $dlLink = $node->getAttribute('href');
                     if (strpos($dlLink, $host) !== false) {
-                        $final[$episode] = $dlLink;
+                        $final[$episode]["link"] = $dlLink;
+                        $final[$episode]["html"] = "<div class='link'><a href='$dlLink' target='_blank'>$dlLink</div>";
                         break;
                     }
                 }

@@ -195,6 +195,22 @@ class DB
         return $res;
     }
 
+    public function getShowLinks($id, $season, $episode) {
+        $this->connect();
+        $sql = "
+            SELECT *
+            FROM links
+            WHERE `show` = :id AND ((season = :season AND episode >= :episode) OR (season > :season))";
+        $stmt = $this->dbh->prepare($sql);
+        $stmt->execute(array(
+            "id" => $id,
+            "season" => $season,
+            "episode" => $episode,
+        ));
+        $this->disconnect();
+        return $stmt->fetchAll();
+    }
+
     private function insertRaw($sql)
     {
         $this->connect();

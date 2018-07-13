@@ -29,11 +29,11 @@ if (!isset($root)) {
             },
             success: function (data) {
                 console.log(data);
-                var html = "";
-                $.each(data, function () {
-                    html += this["html"];
+                $.each(data, function (season, eps) {
+                    $.each(eps, function (ep, infos) {
+                        $("#show-" + id).empty().append("S" + season + "E" + ep + infos["html"]);
+                    });
                 });
-                $("#show-" + id).empty().append(html);
                 loading.hide();
             }, error: function (e) {
                 console.log(e);
