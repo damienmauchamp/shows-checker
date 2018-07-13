@@ -38,13 +38,3 @@ echo json_encode(array(
     "seasons" => $seasons,
     "poster" => $poster
 ));
-
-/*
-vardump($id);
-vardump($name);
-vardump($seasons);
-$prePoster = "//image.tmdb.org/t/p/w600_and_h900_bestv2";
-vardump($prePoster . $poster);
-
-echo "<img src=\"$prePoster$poster\"/>";
-*/
