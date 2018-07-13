@@ -1,6 +1,8 @@
 <?php
 
 require_once "start.php";
+
+
 $root = '';
 
 ?>
@@ -10,6 +12,10 @@ $root = '';
     <? include "inc/meta.php" ?>
 </head>
 <body>
+
+<?
+getShows();
+?>
 
 </body>
 </html>

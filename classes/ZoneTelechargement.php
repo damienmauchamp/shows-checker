@@ -1,87 +1,41 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: damien
- * Date: 23/05/2018
- * Time: 18:54
+ * User: dmauchamp
+ * Date: 13/07/2018
+ * Time: 14:34
  */
 
 namespace TVShowsAPI;
-
 
 use DOMDocument;
 
 class ZoneTelechargement
 {
-//    private $domain = "https://1ww.zone-telechargement1.com/";
-
     /**
      * ZoneTelechargement constructor.
      */
     public function __construct()
     {
+
     }
 
     public static function search($search, $quality = "720", $lang = "vostfr")
     {
         $domain = "https://zone-telechargement1.ws/";
+        $domain = "https://1ww.zones-telechargement1.com/";
 //        $searchUrl = "index.php?story=$search&do=search&subaction=search";
 //        $res = "hd$quality";
         $searchUrl = "index.php?story=" . urlencode("$search") . "&do=search&subaction=search";
         $recherche = $domain . $searchUrl;
-        return self::getResultLinks($recherche, $quality, $lang);
+        return $recherche;
+//        return self::getResultLinks($recherche, $quality, $lang);
     }
 
-    /**
-     * @param string $name
-     * @param TVEpisode $episode
-     * @param string $quality
-     * @return string
-     */
-    public static function getTvEpisodeLink($name, $episode, $quality = "720")
-    {
-        $link = null;
-        $saison = $episode->getSeason();
-        $episodes = array($episode->getNumber());
-
-        $links = self::search("$name saison $saison", $quality);
-
-
-//        $lien = isset($links[0]) ? $links[0] : null;
-
-        if (isset($links[0])) {
-            $dlProtectLinks = self::getEpisodesLinks($links[0], $episodes);
-            $link = self::getFinalLink($dlProtectLinks, "1fichier");
-        }
-        return $link;
-    }
-
-    private static function getLinksFromHtml($html)
-    {
-        $hrefs = array();
-        if ($html) {
-            $dom = new DOMDocument();
-            @$dom->recover = true;
-            @$dom->strictErrorChecking = false;
-            @$dom->loadHTML($html);
-
-            // récupération des liens
-            $hrefs = @$dom->getElementsByTagName('a');
-        }
-        return $hrefs;
-    }
-
-    /**
-     * @param $url
-     * @param string $quality
-     * @param $lang
-     * @return array|bool
-     */
-    private static function getResultLinks($url, $quality, $lang)
+    public static function getResultLinks($html, $quality = 720, $lang = "vostfr")
     {
         $links = array();
-        if (!$html = self::curlGETRequestToHtml($url))
-            return false;
+        if (!$html) return false;
         $hrefs = self::getLinksFromHtml($html);
 
         foreach ($hrefs as $node) {
@@ -92,7 +46,7 @@ class ZoneTelechargement
         return array_unique($links);
     }
 
-    public static function getEpisodesLinks($url, $episodes)
+    public static function getSeasonLinks($url, $episodes)
     {
         $links = array();
         if (!$html = self::curlGETRequestToHtml($url))
@@ -105,9 +59,9 @@ class ZoneTelechargement
 
 //            var_dump($episodes);exit;
 
-            foreach ($episodes as $e) {
+            foreach ($episodes as $e => $null) {
                 if (strpos($text, "Episode $e") !== false) {
-                    $links[] = $link;
+                    $links[$e][] = $link;
 //                    var_dump("$text : $link");
                 }
             }
@@ -116,21 +70,43 @@ class ZoneTelechargement
         return $links;
     }
 
-    public static function getFinalLink($links, $host = "1fichier")
+    public static function getFinalLinks($links, $host = "uptobox")
     {
-        $final = "";
-        foreach ($links as $dlLink) {
-            $hrefs = self::curlDLProtect($dlLink);
-            foreach ($hrefs as $node) {
-                $text = $node->nodeValue;
-                $link = $node->getAttribute('href');
-
-                if (strpos($text, $host) !== false) {
-                    $final = $link;
+//        echo "<hr/><hr/>";
+        $final = array();
+        foreach ($links as $episode => $dlLinks) {
+//            var_dump("Episode $episode");
+            foreach ($dlLinks as $link) {
+//                var_dump($link);
+                $hrefs = self::curlDLProtect($link);
+                foreach ($hrefs as $node) {
+                    $dlLink = $node->getAttribute('href');
+                    if (strpos($dlLink, $host) !== false) {
+                        $final[$episode] = $dlLink;
+                        break;
+                    }
                 }
             }
+//            echo "<hr/>";
         }
         return $final;
+    }
+
+    public static function curlGETRequestToHtml($url)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        $html = curl_exec($ch);
+
+        if ($html) {
+            curl_close($ch);
+            return $html;
+        } else {
+            echo "The website could not be reached (Search).";
+        }
+        return false;
     }
 
     public static function curlDLProtect($url)
@@ -154,29 +130,24 @@ class ZoneTelechargement
             curl_close($curl);
             $liens = self::getLinksFromHtml($html);
         } else {
-            echo "The website could not be reached (1).";
+            echo "The website could not be reached (DLProtect).";
         }
         return $liens;
     }
 
 
-    public static function curlGETRequestToHtml($url)
+    private static function getLinksFromHtml($html)
     {
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-        $html = curl_exec($ch);
-
+        $hrefs = array();
         if ($html) {
-            curl_close($ch);
-            return $html;
-        } else {
-            echo "The website could not be reached (2).";
+            $dom = new DOMDocument();
+            @$dom->recover = true;
+            @$dom->strictErrorChecking = false;
+            @$dom->loadHTML($html);
+
+            // récupération des liens
+            $hrefs = @$dom->getElementsByTagName('a');
         }
-        return false;
+        return $hrefs;
     }
-
-
 }

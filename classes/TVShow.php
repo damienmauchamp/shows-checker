@@ -14,28 +14,30 @@ class TVShow
 {
 
     private $id;
+    private $name;
     private $lastSeenSeason;
     private $lastSeenEpisode;
+    private $quality;
     private $status;
+    private $poster;
 
-    private $name;
-    private $numberOfSeasons;
     private $seasons;
+
 
     /**
      * TVShow constructor.
-     * @param $id
-     * @param int $lastSeenSeason
-     * @param int $lastSeenEpisode
-     * @param bool $status
      */
-    public function __construct($id, $lastSeenSeason = 1, $lastSeenEpisode = 1, $status = true)
+    public function __construct()
     {
-        $this->id = $id;
-        $this->lastSeenSeason = $lastSeenSeason;
-        $this->lastSeenEpisode = $lastSeenEpisode;
-        $this->status = $status;
-        $this->fetchSeasons();
+        $this->lastSeenSeason = 1;
+        $this->lastSeenEpisode = 1;
+    }
+
+    public static function withArray($array)
+    {
+        $instance = new self();
+        $instance->fill($array);
+        return $instance;
     }
 
     /**
@@ -54,14 +56,79 @@ class TVShow
         return !$this->status;
     }
 
-    private function fetchSeasons()
+    private function fill($array)
     {
-        $url = API_URL . URL_TV_SHOW . $this->id;
-        $response = json_decode(api::get($url));
+        foreach ($array as $var => $val) {
+            if (!is_numeric($var))
+                $this->$var = $val;
+        }
+    }
 
-        $this->numberOfSeasons = isset($response->number_of_seasons) ? $response->number_of_seasons : 0;
-        $this->seasons = isset($response->seasons) ? $response->seasons : null;
-        $this->name = isset($response->original_name) ? $response->original_name : null;
+    public function addToDatabase()
+    {
+        $db = new db;
+        return $db->addShow($this);
+    }
+
+    private function progressionToString()
+    {
+        $lastSeenSeason = $this->getLastSeenSeason();
+//        var_dump($lastSeenSeason);exit;
+
+        // SEASONS
+        $str = "
+            <label for='seasons-" . $this->getId() . "'></label>
+            <select class='seasons' data-show-id='" . $this->getId() . "' id='seasons-" . $this->getId() . "'>";
+        foreach ($this->seasons as $season => $e) {
+            $selected = $season == $this->getLastSeenSeason() ? "selected" : "";
+            $str .= "
+                <option data-season-episodes='" . $e . "' value='" . $season . "' " . $selected . ">" . $season . "</option>
+            ";
+        }
+        $str .= "
+            </select>
+        ";
+
+        // EPISODES
+        $str .= "
+            <label for='episodes-" . $this->getId() . "'></label>
+            <select class='episodes' data-show-id='" . $this->getId() . "' id='episodes-" . $this->getId() . "'>";
+        for ($e = 1; $e <= $this->seasons->$lastSeenSeason; $e++) {
+            $selected = $e == $this->getLastSeenEpisode() ? "selected" : "";
+            $str .= "
+                <option value='" . $e . "' " . $selected . ">" . $e . "</option>
+            ";
+        }
+        $str .= "
+            </select>
+        ";
+
+        // BTN
+        $str .= "
+        <button class='btn-show' id='btn-" . $this->getId() . "'
+                    data-show-id='" . $this->getId() . "'
+                    data-show-last-season='" . $this->getLastSeenSeason() . "'
+                    data-show-last-episode='" . $this->getLastSeenEpisode() . "'
+                    data-show-quality='" . $this->getQuality() . "'
+                    onclick='getLinks(this)'
+                    value=''>Update</button>
+        ";
+        return $str;
+    }
+
+    public function toString()
+    {
+        $str = "
+            <div class='show' data-show-id='" . $this->getId() . "'>
+                <img class='poster' src='" . $this->getPoster(true) . "' style='width:50px'/>
+                <h3 class='title'>" . $this->getName() . "</h3>";
+        $str .= $this->progressionToString();
+        $str .= "<h4 class=''>S" . $this->getLastSeenSeason(true) . "E" . $this->getLastSeenEpisode(true) . "</h4>
+            </div>
+            <div class='loading' id='loading-" . $this->getId() . "' style='display:none'>Loading...</div>
+            <pre id='show-" . $this->getId() . "'></pre>";
+
+        return $str;
     }
 
     /**
@@ -73,6 +140,14 @@ class TVShow
     }
 
     /**
+     * @param mixed $id
+     */
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
+
+    /**
      * @return mixed
      */
     public function getName()
@@ -81,27 +156,94 @@ class TVShow
     }
 
     /**
-     * @return int
+     * @param mixed $name
      */
-    public function getLastSeenSeason()
+    public function setName($name)
     {
-        return $this->lastSeenSeason;
+        $this->name = $name;
     }
 
     /**
-     * @return int
+     * @param bool $full
+     * @return mixed
      */
-    public function getLastSeenEpisode()
+    public function getLastSeenSeason($full = false)
     {
-        return $this->lastSeenEpisode;
+        return $full ? sprintf("%02d", $this->lastSeenSeason) : $this->lastSeenSeason;
+    }
+
+    /**
+     * @param mixed $lastSeenSeason
+     */
+    public function setLastSeenSeason($lastSeenSeason)
+    {
+        $this->lastSeenSeason = $lastSeenSeason;
+    }
+
+    /**
+     * @param bool $full
+     * @return mixed
+     */
+    public function getLastSeenEpisode($full = false)
+    {
+        return $full ? sprintf("%02d", $this->lastSeenEpisode) : $this->lastSeenEpisode;
+    }
+
+    /**
+     * @param mixed $lastSeenEpisode
+     */
+    public function setLastSeenEpisode($lastSeenEpisode)
+    {
+        $this->lastSeenEpisode = $lastSeenEpisode;
     }
 
     /**
      * @return mixed
      */
-    public function getNumberOfSeasons()
+    public function getQuality()
     {
-        return $this->numberOfSeasons;
+        return $this->quality;
+    }
+
+    /**
+     * @param mixed $quality
+     */
+    public function setQuality($quality)
+    {
+        $this->quality = $quality;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    /**
+     * @param mixed $status
+     */
+    public function setStatus($status)
+    {
+        $this->status = $status;
+    }
+
+    /**
+     * @param bool $full
+     * @return mixed
+     */
+    public function getPoster($full = false)
+    {
+        return $this->poster ? ($full ? "//image.tmdb.org/t/p/w600_and_h900_bestv2" . $this->poster : $this->poster) : null;
+    }
+
+    /**
+     * @param mixed $poster
+     */
+    public function setPoster($poster)
+    {
+        $this->poster = $poster;
     }
 
     /**
@@ -112,30 +254,69 @@ class TVShow
         return $this->seasons;
     }
 
-//    /**
-//     * @param $id
-//     * @return TVShow
-//     */
-//    public static function withID($id)
-//    {
-//        $instance = new self();
-//        $instance->id = $id;
-////        $instance->FONCTION();
-//        return $instance;
-//    }
-
-
-    public function getTvShow($id)
+    /**
+     * @param mixed $seasons
+     * @param mixed $type
+     */
+    public function setSeasons($seasons, $type = null)
     {
-        $url = API_URL . URL_TV_SHOW . $id;
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_URL => $url . "?api_key=" . API_KEY
-        ));
-        $response = curl_exec($curl);
-        curl_close($curl);
-        return $response;
+        if ($type == "array") {
+            $this->seasons = (object)array();
+            foreach ($seasons as $s) {
+                $this->seasons->$s["season"] = intval($s["episodes"]);
+            }
+        } else {
+            $this->seasons = $seasons;
+        }
+    }
+
+    public function getNumberOfSeasons()
+    {
+        return count($this->seasons);
+    }
+
+    public function getNeededEpisodes($lastSeason = false, $lastEpisode = false)
+    {
+        $episodes = array();
+        $lastSeenSeason = $lastSeason ? $lastSeason : $this->getLastSeenSeason();
+        $lastSeenEpisode = $lastEpisode ? $lastEpisode : $this->getLastSeenEpisode();
+        foreach ($this->getSeasons() as $season => $numberOfEpisodes) {
+            if ($season >= $this->getLastSeenSeason()) {
+                for ($e = 1; $e <= $numberOfEpisodes; $e++) {
+                    if (($season === $lastSeenSeason && $e >= $lastSeenEpisode)
+                        || ($season > $lastSeenSeason)) {
+                        $episodes[$season][$e] = null;
+                    }
+                }
+            }
+        }
+        return $episodes;
+    }
+
+    public function updateLinks($links)
+    {
+        $res = true;
+        $db = new db;
+        foreach ($links as $season => $episodes) {
+            foreach ($episodes as $episode => $link) {
+                if (!$db->addLink($this->getId(), $season, $episode, $link))
+                    $res = false;
+            }
+        }
+        return $res;
+    }
+
+    public function updateProgression($season, $episode)
+    {
+        $db = new db;
+        $this->lastSeenSeason = $season;
+        $this->lastSeenEpisode = $episode;
+        return $db->updateShowProgression($this->getId(), $season, $episode);
+    }
+
+    public function removeOldLinks() {
+        $db = new db;
+        return $db->removeOldLinks($this->getId(), $this->getLastSeenSeason(), $this->getLastSeenEpisode());
     }
 
 

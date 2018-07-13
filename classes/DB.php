@@ -53,6 +53,148 @@ class DB
         return file_get_contents(dirname(__DIR__) . '/.env');
     }
 
+    /**
+     * @param TVShow $show
+     * @return bool
+     */
+    public function addShow($show)
+    {
+        $this->connect();
+
+        $sql = "
+            INSERT INTO shows (id, name, lastSeenSeason, lastSeenEpisode, quality, status, poster)
+            VALUES (:id, :name, :lastSeenSeason, :lastSeenEpisode, :quality, :status, :poster)
+            ON DUPLICATE KEY UPDATE name=:name, lastSeenSeason=:lastSeenSeason, lastSeenEpisode=:lastSeenEpisode, quality=:quality, status=:status, poster=:poster";
+        $stmt = $this->dbh->prepare($sql);
+        $resShow = $stmt->execute(array(
+            "id" => $show->getId(),
+            "name" => $show->getName(),
+            "lastSeenSeason" => $show->getLastSeenSeason(),
+            "lastSeenEpisode" => $show->getLastSeenEpisode(),
+            "quality" => $show->getQuality(),
+            "status" => $show->getStatus(),
+            "poster" => $show->getPoster()
+        ));
+        unset($sql);
+
+        $resSeasons = true;
+        foreach ($show->getSeasons() as $season => $episodes) {
+            $sql = "INSERT INTO seasons (`show`, season, episodes)
+                    VALUES (:id, :season, :episodes)
+                    ON DUPLICATE KEY UPDATE season = :season, episodes = :episodes";
+            $stmt = $this->dbh->prepare($sql);
+            $resEach = $stmt->execute(array(
+                "id" => $show->getId(),
+                "season" => $season,
+                "episodes" => $episodes
+            ));
+            if (!$resEach) $resSeasons = false;
+            unset($sql);
+            unset($resEach);
+        }
+
+        $this->disconnect();
+        return $resShow && $resSeasons;
+    }
+
+    public function getShows()
+    {
+        $this->connect();
+        $sql = "
+            SELECT *
+            FROM shows
+            WHERE status = 1
+            ORDER BY name";
+        $stmt = $this->dbh->query($sql);
+        $stmt->execute();
+
+        $shows = array();
+        foreach ($stmt->fetchAll() as $entity) {
+            $show = TVShow::withArray($entity);
+            $shows[] = $show;
+            $sql = "
+                SELECT *
+                FROM seasons
+                WHERE `show` = " . $show->getId();
+            $stmt = $this->dbh->query($sql);
+            $seasons = $stmt->fetchAll();
+            $show->setSeasons($seasons, "array");
+        }
+        $this->disconnect();
+        return $shows;
+    }
+
+    public function getShow($id)
+    {
+        $this->connect();
+        $sql = "
+            SELECT *
+            FROM shows
+            WHERE id=$id";
+        $stmt = $this->dbh->query($sql);
+        $stmt->execute();
+
+        $show = TVShow::withArray($stmt->fetch());
+        $sql = "
+                SELECT *
+                FROM seasons
+                WHERE `show` = " . $show->getId();
+        $stmt = $this->dbh->query($sql);
+        $seasons = $stmt->fetchAll();
+        $show->setSeasons($seasons, "array");
+        $this->disconnect();
+        return $show;
+    }
+
+    public function addLink($id, $season, $episode, $link)
+    {
+        $this->connect();
+        $sql = "INSERT INTO links (`show`, season, episode, link)
+                VALUES (:id, :season, :episode, :link)
+                ON DUPLICATE KEY UPDATE season = :season, episode = :episode, link = :link";
+        $stmt = $this->dbh->prepare($sql);
+        $res = $stmt->execute(array(
+            "id" => $id,
+            "season" => $season,
+            "episode" => $episode,
+            "link" => $link
+        ));
+        $this->disconnect();
+        return $res;
+    }
+
+    public function updateShowProgression($id, $season, $episode)
+    {
+        $this->connect();
+        $sql = "UPDATE shows
+                SET lastSeenSeason = :season, lastSeenEpisode = :episode
+                WHERE id=:id";
+        $stmt = $this->dbh->prepare($sql);
+        $res = $stmt->execute(array(
+            "id" => $id,
+            "season" => $season,
+            "episode" => $episode,
+        ));
+        $this->disconnect();
+        return $res;
+    }
+
+    public function removeOldLinks($id, $season, $episode)
+    {
+        $this->connect();
+        $sql = "DELETE FROM links
+                WHERE `show` = :id AND NOT
+                  ((season = :season AND episode >= :episode) OR (season > :season))";
+        $stmt = $this->dbh->prepare($sql);
+        $res = $stmt->execute(array(
+            "id" => $id,
+            "season" => $season,
+            "episode" => $episode,
+        ));
+        $this->disconnect();
+        return $res;
+    }
+
     private function insertRaw($sql)
     {
         $this->connect();
@@ -88,169 +230,6 @@ class DB
         $res = $stmt->execute();
         $this->disconnect();
         return $res;
-    }
-
-    public function insertLink($id, $season, $episode, $link)
-    {
-        $this->connect();
-        $stmt = $this->dbh->prepare("
-            INSERT INTO links (id, season, episode, link)
-            VALUES (:id, :season, :episode, :link)
-            ON DUPLICATE KEY UPDATE link=:link"
-        );
-        $res = $stmt->execute(array(
-            "id" => $id,
-            "season" => $season,
-            "episode" => $episode,
-            "link" => $link
-        ));
-        $this->disconnect();
-        return $res;
-    }
-
-    public function showsInit($shows)
-    {
-        foreach ($shows as $show) {
-            $name = addslashes($show["name"]);
-            $quality = isset($show["quality"]) ? $show["quality"] : 720;
-            $sql = "INSERT INTO shows (id, name, lastSeenSeason, lastSeenEpisode, quality, status)
-                VALUES ($show[id], '$name', $show[lastSeenSeason], $show[lastSeenEpisode], $quality, $show[status])";
-            echo $sql . "<br/>";
-            $this->executeRaw($sql);
-        }
-        echo count($shows);
-    }
-
-    public function getShows()
-    {
-        $sql = "SELECT * FROM shows ORDER BY name";
-        return $this->selectRaw($sql);
-    }
-
-    public function getLinks()
-    {
-        $sql = "SELECT * FROM links";
-
-        $res = array();
-        foreach ($this->selectRaw($sql) as $item) {
-            $id = $item["id"];
-            $season = $item["season"];
-            $episode = $item["episode"];
-            $link = $item["link"];
-            $res[$id][$season][$episode] = $link;
-        }
-        return $res;
-    }
-
-    public function addShowsLinks($id, $array)
-    {
-        foreach ($array as $season => $episodes) {
-            foreach ($episodes as $episode => $link) {
-                $this->insertLink($id, $season, $episode, $link);
-            }
-        }
-    }
-
-    public function removeShowsOldLinks($id, $season, $episode)
-    {
-        $this->connect();
-        $stmt = $this->dbh->prepare("
-            DELETE FROM links
-            WHERE id = :id AND (season < :season OR (season = :season AND episode <= :episode))"
-        );
-        $res = $stmt->execute(array(
-            "id" => $id,
-            "season" => $season,
-            "episode" => $episode
-        ));
-        $this->disconnect();
-        return $res;
-    }
-
-    public function updateShow($id, $lastSeason, $lastEpisode)
-    {
-        $this->connect();
-        $stmt = $this->dbh->prepare("
-            UPDATE shows
-            SET lastSeenSeason = :season, lastSeenEpisode = :episode
-            WHERE id = :id"
-        );
-        $res = $stmt->execute(array(
-            "id" => $id,
-            "season" => $lastSeason,
-            "episode" => $lastEpisode
-        ));
-        $this->disconnect();
-        return $res;
-    }
-
-    public function getShowsLink($id)
-    {
-        $this->connect();
-        $stmt = $this->dbh->prepare("
-            SELECT *
-            FROM links
-            WHERE id = :id"
-        );
-        $stmt->execute(array("id" => $id));
-        $this->disconnect();
-        return $this->fetchAllToJSON($stmt->fetchAll(), true);
-    }
-
-    private function fetchAllToJSON($array, $html = false)
-    {
-        foreach ($array as $k => $elt) {
-            foreach ($elt as $key => $val) {
-                if (is_numeric($key))
-                    unset($array[$k][$key]);
-                if ($html)
-                    $array[$k]["html"] = linksToHTML($array[$k]);
-            }
-        }
-        return json_encode($array);
-    }
-
-    public function getShowQuality($id) {
-        $this->connect();
-        $stmt = $this->dbh->prepare("
-            SELECT quality
-            FROM shows
-            WHERE id = :id"
-        );
-        $stmt->execute(array("id" => $id));
-        $this->disconnect();
-        return $stmt->fetch();
-    }
-
-    public function addLinks($shows)
-    {
-        $values = "";
-        $count = 0;
-        foreach ($shows as $show) {
-            $count++;
-            $link = addslashes($show["link"]);
-            if (isset($show["id"])) {
-                $values .= "($show[id], $show[season], $show[episode], '$link')";
-                if ($count !== count($shows))
-                    $values .= ", ";
-            }
-        }
-
-        $sql = "INSERT INTO links (id, season, episode, link) VALUES $values";
-        echo $sql;
-//        $this->insertRaw($sql);
-    }
-
-    public function getAllLinks() {
-        $this->connect();
-        $stmt = $this->dbh->prepare("
-        SELECT *
-        FROM links l
-          LEFT JOIN shows s ON l.id = s.id
-        WHERE LENGTH(l.link) > 0");
-        $stmt->execute();
-        $this->disconnect();
-        return $this->fetchAllToJSON($stmt->fetchAll(), true);
     }
 
 

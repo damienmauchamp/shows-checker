@@ -8,6 +8,7 @@ ini_set("max_execution_time", 0);
 set_time_limit(0);
 
 require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . "/inc/functions.php";
 
 use \TVShowsAPI\APICall as api;
 use \TVShowsAPI\DB as db;
@@ -38,12 +39,12 @@ define("URL_TV_SHOW", "tv/");
 $db = new db;
 
 // all shows
-$tvShowsList = array();
-$tvShowsList = $db->getShows();
-
-// all links
-$baseLinks = array();
-$baseLinks = $db->getLinks();
+//$tvShowsList = array();
+//$tvShowsList = $db->getShows();
+//
+//// all links
+//$baseLinks = array();
+//$baseLinks = $db->getLinks();
 
 $tvLinks = array();
 
@@ -70,7 +71,7 @@ function linksToHTML($array)
     $text = "S$array[season]E$array[episode]";
     return $array["link"] ?
         "<a href=\"$array[link]\" class=\"episode-link\" data-link-season=\"$array[season]\"  data-link-episode=\"$array[episode]\">$text</a><br/>" :
-        $text."<br/>";
+        $text . "<br/>";
 }
 
 // init
@@ -325,10 +326,11 @@ if (false) {
 }
 
 
-function vardump($data, $label='', $return = false) {
+function vardump($data, $label = '', $return = false)
+{
 
-    $debug           = debug_backtrace();
-    $callingFile     = $debug[0]['file'];
+    $debug = debug_backtrace();
+    $callingFile = $debug[0]['file'];
     $callingFileLine = $debug[0]['line'];
 
     ob_start();
@@ -414,18 +416,18 @@ function vardump($data, $label='', $return = false) {
     $c = trim($c);
     $c = preg_replace("/\n<\/span>/", "</span>\n", $c);
 
-    if ($label == ''){
+    if ($label == '') {
         $line1 = '';
     } else {
         $line1 = "<strong>$label</strong> \n";
     }
 
-    $out = "\n<!-- Dumpr Begin -->\n".
-        "<style type=\"text/css\">".$style."</style>\n".
+    $out = "\n<!-- Dumpr Begin -->\n" .
+        "<style type=\"text/css\">" . $style . "</style>\n" .
         "<div class=\"dumpr\">
-    <div><pre>$line1 $callingFile : $callingFileLine \n$c\n</pre></div></div><div style=\"clear:both;\">&nbsp;</div>".
+    <div><pre>$line1 $callingFile : $callingFileLine \n$c\n</pre></div></div><div style=\"clear:both;\">&nbsp;</div>" .
         "\n<!-- Dumpr End -->\n";
-    if($return) {
+    if ($return) {
         return $out;
     } else {
         echo $out;

@@ -7,23 +7,25 @@ if (!isset($root)) {
 <script src="<?= $root ?>libs/jquery/jquery-1.12.1.js"></script>
 <script src="<?= $root ?>libs/jquery/jquery-migrate-1.2.1.min.js"></script>
 <script>
+
+
     function getLinks(btn) {
         var id = $(btn).attr("data-show-id");
         var lastSeason = $(btn).attr("data-show-last-season");
         var lastEpisode = $(btn).attr("data-show-last-episode");
-        var quality = $(btn).attr("data-show-quality");
+//        var quality = $(btn).attr("data-show-quality");
         var loading = $("#loading-" + id);
 
         loading.show();
         $.ajax({
-            url: "./ajax/getLinks.php",
+            url: "./ajax/links.php",
             method: "GET",
             data: {
                 id: id,
-                lastSeason: lastSeason,
-                lastEpisode: lastEpisode,
-                quality: quality,
-                seen: 0
+                lastSeenSeason: lastSeason,
+                lastSeenEpisode: lastEpisode
+//                quality: quality,
+//                seen: 0
             },
             success: function (data) {
                 console.log(data);
@@ -67,4 +69,5 @@ if (!isset($root)) {
             btn.attr("data-show-last-episode", episode);
         });
     });
+
 </script>

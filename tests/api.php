@@ -28,7 +28,7 @@ for ($i = 1; $i <= $number_of_seasons; $i++) {
     $key = "season/$i";
     $val = isset($response->$key) ? $response->$key : null;
     $seasons[$i] = count($val->episodes);
-    if ($i === intval($lastSeenSeason))
+    if ($i === intval($lastSeenSeason) && $val->poster_path)
         $poster = $val->poster_path;
 }
 
@@ -38,13 +38,3 @@ echo json_encode(array(
     "seasons" => $seasons,
     "poster" => $poster
 ));
-
-/*
-vardump($id);
-vardump($name);
-vardump($seasons);
-$prePoster = "//image.tmdb.org/t/p/w600_and_h900_bestv2";
-vardump($prePoster . $poster);
-
-echo "<img src=\"$prePoster$poster\"/>";
-*/
