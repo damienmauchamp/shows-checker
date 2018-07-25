@@ -8,7 +8,7 @@
 
 namespace TVShowsAPI;
 
-use \TVShowsAPI\APICall as api;
+//use \TVShowsAPI\APICall as api;
 
 class TVShow
 {
@@ -103,7 +103,7 @@ class TVShow
             </select>
         ";
 
-        // BTN
+        // BTN Update
         $str .= "
         <button class='btn-show' id='btn-" . $this->getId() . "'
                     data-show-id='" . $this->getId() . "'
@@ -328,6 +328,24 @@ class TVShow
     {
         $db = new db;
         return $db->getShowLinks($this->getId(), $this->getLastSeenSeason(), $this->getLastSeenEpisode());
+    }
+
+    public function getLastSeason()
+    {
+        end($this->seasons);
+        return key($this->seasons);
+    }
+
+    public function getLastSeasonEpisode($season)
+    {
+        return $this->seasons->$season;
+    }
+
+    public function upToDate()
+    {
+        $lastSeason = $this->getLastSeason();
+        $lastEpisode = $this->getLastSeasonEpisode($lastSeason);
+        return ($this->lastSeenSeason == $lastSeason && $this->lastSeenEpisode == $lastEpisode) || $lastEpisode == 0;
     }
 
 

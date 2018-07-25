@@ -44,7 +44,8 @@ function getShows()
     /** @var \TVShowsAPI\TVShow $show */
     foreach ($db->getShows() as $show) {
 //        var_dump($show);
-        echo $show->toString();
+        if (!$show->upToDate())
+            echo $show->toString();
     }
 }
 
@@ -72,4 +73,20 @@ function fetchLinks($show, $episodes)
         $finalLink[$season] = zt::getFinalLinks($dlProtectLinks, "1fichier");
     }
     return $finalLink;
+}
+
+function getLastKey($array)
+{
+    end($array);
+    return key($array);
+}
+
+function getLastValue($array)
+{
+    return $array[count($array) - 1];
+}
+
+function getLastValueStd($array)
+{
+    return array_unshift($array, array_pop($array));
 }

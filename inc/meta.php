@@ -54,7 +54,7 @@ if (!isset($root)) {
             var btn = $("#btn-" + id);
 
             selectEpisodes.empty();
-            for (var e = 1; e < nEpisodes; e++) {
+            for (var e = 1; e <= nEpisodes; e++) {
                 selectEpisodes.append("<option value=\"" + e + "\">" + e + "</option>");
             }
 

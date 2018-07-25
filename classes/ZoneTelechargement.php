@@ -24,6 +24,7 @@ class ZoneTelechargement
     {
         $domain = "https://zone-telechargement1.ws/";
         $domain = "https://1ww.zones-telechargement1.com/";
+        $domain = "https://zone-telechargement1.org/";
 //        $searchUrl = "index.php?story=$search&do=search&subaction=search";
 //        $res = "hd$quality";
         $searchUrl = "index.php?story=" . urlencode("$search") . "&do=search&subaction=search";
