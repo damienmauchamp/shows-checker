@@ -15,7 +15,7 @@ $root = '';
 
 <?
 getShows();
-// todo: afficher les liens déjà dispos
+// todo : stocker liens ZT/saisons, si rien, recherche
 ?>
 
 </body>
